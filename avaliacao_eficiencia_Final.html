@@ -1483,43 +1483,62 @@ function carregarDados() {
 
 function restaurarColab(c) {
   const cid = c.id;
-  // Restaurar notas das responsabilidades
+
   c.responsabilidades.forEach((r, i) => {
     if (r.nota !== null) {
-      document.querySelectorAll(`#stars-${cid}-${i} .star, [id^="stars-${cid}"]`).forEach(s => {});
-      // Usar setNota internamente sem disparar novo save
-      const stars = document.querySelectorAll(`#panel-${cid} .resp-row-${i} .star`);
+      const colab = getC(cid);
+      if (colab && colab.responsabilidades[i]) {
+        colab.responsabilidades[i].nota = r.nota;
+        const row = document.getElementById(`rrow-${cid}-${i}`);
+        if (row) {
+          row.querySelectorAll('.star').forEach((s, n) => {
+            s.className = 'star';
+            if (n + 1 === r.nota) s.classList.add('s' + r.nota);
+          });
+          row.classList.add('rated');
+        }
+      }
     }
   });
-  // Restaurar campos de texto
-  ['pontosFortes','gaps','contexto','justificativa'].forEach(campo => {
-    const el = document.getElementById(`${campo}-${cid}`);
-    if (el && c[campo]) el.value = c[campo];
-  });
-  // Restaurar recomendação
-  if (c.recomendacao) {
-    const btn = document.querySelector(`#panel-${cid} [data-rec="${c.recomendacao}"]`);
-    if (btn) btn.classList.add('selected');
-  }
-  // Restaurar NPS
+
   if (c.nps !== null) {
-    document.querySelectorAll(`[id^="nps-${cid}-"]`).forEach(b => {
-      if (b.id === `nps-${cid}-${c.nps}`) b.className = 'nps-btn selected';
+    const colab = getC(cid);
+    if (colab) colab.nps = c.nps;
+    document.querySelectorAll(`[id^="nps-${cid}-"]`).forEach(b => b.className = 'nps-btn');
+    const npsBtn = document.getElementById(`nps-${cid}-${c.nps}`);
+    if (npsBtn) {
+      npsBtn.classList.add(c.nps <= 6 ? 'nsel-d' : c.nps <= 8 ? 'nsel-n' : 'nsel-p');
+      const lbl = c.nps <= 6 ? '🔴 Detrator' : c.nps <= 8 ? '🟡 Neutro' : '🟢 Promotor';
+      const cor = c.nps <= 6 ? '#ef4444' : c.nps <= 8 ? '#d97706' : '#059669';
+      const res = document.getElementById(`nps-res-${cid}`);
+      if (res) { res.textContent = `NPS ${c.nps} — ${lbl}`; res.style.color = cor; }
+    }
+  }
+
+  if (c.recomendacao) {
+    const clsMap = { manter: 'rm', desenvolver: 'rd', realocar: 'rr', avaliar: 'ra', desligar: 'rds' };
+    const btns = document.querySelectorAll(`#rec-${cid} .rec-btn`);
+    const ordemRec = ['manter', 'desenvolver', 'realocar', 'avaliar', 'desligar'];
+    const idx = ordemRec.indexOf(c.recomendacao);
+    if (idx >= 0 && btns[idx]) {
+      btns.forEach(b => b.className = 'rec-btn');
+      btns[idx].classList.add(clsMap[c.recomendacao]);
+    }
+  }
+
+  const panel = document.getElementById('panel-' + cid);
+  if (panel) {
+    const textareas = panel.querySelectorAll('textarea');
+    const campos = ['pontosFortes', 'gaps', 'contexto', 'justificativa'];
+    let taIdx = 0;
+    textareas.forEach(ta => {
+      if (campos[taIdx] && c[campos[taIdx]]) ta.value = c[campos[taIdx]];
+      taIdx++;
     });
   }
-  // Restaurar notas visuais
-  c.responsabilidades.forEach((r, i) => {
-    if (r.nota !== null) {
-      document.querySelectorAll(`#panel-${cid} .resp-block`).forEach((block, bi) => {
-        if (bi === i) {
-          block.querySelectorAll('.star').forEach(s => {
-            s.classList.toggle('on', parseInt(s.textContent) <= r.nota);
-          });
-        }
-      });
-    }
-  });
-  atualizarFooter(cid);
+
+  calcPeso(cid);
+  atualizarResultado(cid);
 }
 
 // ── INTERCEPTAR TODAS AS ALTERAÇÕES PARA AUTO-SALVAR ──
