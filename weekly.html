@@ -6,10 +6,9 @@
 <title>Weekly Business Review — Easy Market</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
   const firebaseConfig = {
     apiKey: "AIzaSyDZ7_-kQ5rriMEMeLhQ1pwaP4D5bVuM6C8",
     authDomain: "easy-market-rh-e1817.firebaseapp.com",
@@ -19,13 +18,12 @@
     appId: "1:501978722137:web:dac91a8e1b9397235f2648"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  firebase.initializeApp(firebaseConfig);
+  const _fbDB = firebase.firestore();
 
-  // Expor funções globalmente para o script principal
   window._fbSave = async function(lid, sem, data) {
     try {
-      await setDoc(doc(db, "weekly_sessoes", `${lid}_${sem}`), { ...data, _lid: lid, _sem: sem });
+      await _fbDB.collection("weekly_sessoes").doc(`${lid}_${sem}`).set({ ...data, _lid: lid, _sem: sem });
       return true;
     } catch(e) {
       console.error("Firebase save error:", e);
@@ -35,8 +33,8 @@
 
   window._fbLoad = async function(lid, sem) {
     try {
-      const snap = await getDoc(doc(db, "weekly_sessoes", `${lid}_${sem}`));
-      return snap.exists() ? snap.data() : null;
+      const snap = await _fbDB.collection("weekly_sessoes").doc(`${lid}_${sem}`).get();
+      return snap.exists ? snap.data() : null;
     } catch(e) {
       console.error("Firebase load error:", e);
       return null;
@@ -44,7 +42,6 @@
   };
 
   window._fbReady = true;
-  document.dispatchEvent(new Event("fbReady"));
 </script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -1055,7 +1052,7 @@ function init() {
     btn.onclick = () => trocarLider(l.id);
     sidebar.appendChild(btn);
 
-    // Pré-carregar historico_s1 no cache se ainda não houver dado salvo
+    // Pré-carregar historico_s1 no cache e Firebase se ainda não houver dado salvo
     if (l.historico_s1 && l.historico_s1.data) {
       const key = getKey(l.id, "S1");
       const existing = localStorage.getItem(key);
@@ -1063,10 +1060,7 @@ function init() {
         const s1data = { ...l.historico_s1 };
         _cache[key] = s1data;
         localStorage.setItem(key, JSON.stringify(s1data));
-        // Também salva no Firebase quando estiver pronto
-        document.addEventListener("fbReady", () => {
-          window._fbSave(l.id, "S1", s1data);
-        }, { once: false });
+        if (window._fbReady) window._fbSave(l.id, "S1", s1data);
       } else {
         _cache[key] = JSON.parse(existing);
       }
