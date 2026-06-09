@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Business Review — Easy Market</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDZ7_-kQ5rriMEMeLhQ1pwaP4D5bVuM6C8",
+    authDomain: "easy-market-rh-e1817.firebaseapp.com",
+    projectId: "easy-market-rh-e1817",
+    storageBucket: "easy-market-rh-e1817.firebasestorage.app",
+    messagingSenderId: "501978722137",
+    appId: "1:501978722137:web:dac91a8e1b9397235f2648"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Expor funções globalmente para o script principal
+  window._fbSave = async function(lid, sem, data) {
+    try {
+      await setDoc(doc(db, "weekly_sessoes", `${lid}_${sem}`), { ...data, _lid: lid, _sem: sem });
+      return true;
+    } catch(e) {
+      console.error("Firebase save error:", e);
+      return false;
+    }
+  };
+
+  window._fbLoad = async function(lid, sem) {
+    try {
+      const snap = await getDoc(doc(db, "weekly_sessoes", `${lid}_${sem}`));
+      return snap.exists() ? snap.data() : null;
+    } catch(e) {
+      console.error("Firebase load error:", e);
+      return null;
+    }
+  };
+
+  window._fbReady = true;
+  document.dispatchEvent(new Event("fbReady"));
+</script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #566951;
+  --primary-dark: #3d4e3a;
+  --primary-light: #e8f3ec;
+  --accent: #12A27F;
+  --accent-light: #e6f7f2;
+  --text: #1a1a1a;
+  --text-muted: #6b7280;
+  --text-light: #9ca3af;
+  --bg: #f7f8f6;
+  --surface: #ffffff;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --danger: #ef4444;
+  --danger-light: #fef2f2;
+  --warning: #f59e0b;
+  --warning-light: #fffbeb;
+  --success: #10b981;
+  --success-light: #ecfdf5;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  background: var(--primary);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.topbar-logo {
+  width: 32px; height: 32px; background: rgba(255,255,255,0.15);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 13px; color: #fff; letter-spacing: -0.5px;
+}
+.topbar-title { color: #fff; font-size: 14px; font-weight: 500; }
+.topbar-sub { color: rgba(255,255,255,0.6); font-size: 11px; }
+.topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+/* ── LAYOUT ── */
+.layout { display: flex; min-height: calc(100vh - 56px); }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 240px; background: var(--surface); border-right: 1px solid var(--border);
+  padding: 20px 0; position: sticky; top: 56px; height: calc(100vh - 56px);
+  overflow-y: auto; flex-shrink: 0;
+}
+.sidebar-section { padding: 0 16px; margin-bottom: 6px; }
+.sidebar-label {
+  font-size: 10px; font-weight: 600; color: var(--text-light);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 12px 8px 6px;
+}
+.sidebar-btn {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: var(--radius-sm); border: none;
+  background: transparent; color: var(--text-muted); font-family: 'DM Sans', sans-serif;
+  font-size: 13px; cursor: pointer; text-align: left; transition: all 0.15s;
+}
+.sidebar-btn:hover { background: var(--bg); color: var(--text); }
+.sidebar-btn.active { background: var(--primary-light); color: var(--primary); font-weight: 500; }
+.sidebar-btn .dot-status {
+  width: 7px; height: 7px; border-radius: 50%; margin-left: auto; flex-shrink: 0;
+}
+.sidebar-divider { height: 1px; background: var(--border); margin: 12px 16px; }
+
+/* ── MAIN ── */
+.main { flex: 1; padding: 24px; max-width: 960px; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface); border-radius: var(--radius);
+  border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 16px;
+}
+.card-header {
+  padding: 14px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-title {
+  font-size: 13px; font-weight: 600; color: var(--text);
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title .icon {
+  width: 26px; height: 26px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; font-size: 14px;
+}
+.card-body { padding: 16px 20px; }
+
+/* ── SECTION HEADER ── */
+.section-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--primary-light); color: var(--primary);
+  font-size: 11px; font-weight: 600; padding: 4px 10px;
+  border-radius: 20px; margin-bottom: 12px;
+}
+.section-badge.teal { background: var(--accent-light); color: var(--accent); }
+
+/* ── META ROW ── */
+.meta-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.meta-field label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; }
+.meta-field input, .meta-field select {
+  width: 100%; padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif;
+  font-size: 13px; color: var(--text); background: var(--bg);
+  transition: border-color 0.15s;
+}
+.meta-field input:focus, .meta-field select:focus {
+  outline: none; border-color: var(--accent); background: #fff;
+}
+.obj-field { margin-bottom: 16px; }
+.obj-field label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; }
+.obj-field textarea {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif;
+  font-size: 13px; color: var(--text); background: var(--primary-light);
+  border-left: 3px solid var(--accent); resize: none; line-height: 1.5;
+}
+.obj-field textarea:focus { outline: none; border-color: var(--accent); background: #fff; }
+
+/* ── TABLES ── */
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th {
+  background: var(--primary); color: #fff; padding: 9px 12px;
+  text-align: left; font-weight: 500; font-size: 11px; white-space: nowrap;
+}
+.data-table th:first-child { border-radius: 8px 0 0 0; width: 36px; text-align: center; }
+.data-table th:last-child { border-radius: 0 8px 0 0; }
+.data-table td {
+  padding: 8px 12px; border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:nth-child(even) td { background: var(--bg); }
+.data-table tr:nth-child(odd) td { background: var(--surface); }
+.data-table tr.var-row td { background: var(--accent-light) !important; }
+.data-table td.center { text-align: center; }
+.data-table td input, .data-table td select, .data-table td textarea {
+  width: 100%; padding: 5px 8px; border: 1px solid transparent;
+  border-radius: 4px; font-family: 'DM Sans', sans-serif;
+  font-size: 12px; background: transparent; color: var(--text);
+  transition: all 0.15s;
+}
+.data-table td input:focus, .data-table td select:focus, .data-table td textarea:focus {
+  outline: none; border-color: var(--accent); background: #fff;
+  box-shadow: 0 0 0 3px rgba(18,162,127,0.1);
+}
+.data-table td textarea { resize: none; height: 38px; }
+.data-table td select { cursor: pointer; }
+.num-col { text-align: center; font-weight: 600; color: var(--primary); font-family: 'DM Mono', monospace; font-size: 12px; }
+.num-col.teal { color: var(--accent); }
+
+/* Tabela de travamentos */
+.trav-table th { background: var(--primary-dark); }
+
+/* Tabela de follow-up (combinados anteriores) */
+.followup-table th { background: #5b6b78; }
+
+/* Tabela de novos combinados */
+.new-comb-table th { background: var(--accent); }
+
+/* ── BADGES ── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 500; white-space: nowrap;
+}
+.badge-ok { background: var(--success-light); color: #065f46; }
+.badge-warn { background: var(--warning-light); color: #92400e; }
+.badge-bad { background: var(--danger-light); color: #991b1b; }
+.badge-na { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+.badge-alto { background: var(--danger-light); color: #991b1b; }
+.badge-medio { background: var(--warning-light); color: #92400e; }
+.badge-baixo { background: var(--success-light); color: #065f46; }
+
+/* ── HISTÓRICO ── */
+.hist-table th { background: #5c7a57; }
+.hist-table td { font-family: 'DM Mono', monospace; font-size: 12px; text-align: center; }
+.hist-table td:first-child { font-family: 'DM Sans', sans-serif; text-align: left; font-weight: 500; }
+
+/* ── PAINEL GERAL ── */
+.painel-table th { background: var(--primary); }
+.painel-table td { text-align: center; }
+.painel-table td:first-child, .painel-table td:nth-child(2) { text-align: left; }
+.status-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600;
+}
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px; border-radius: var(--radius-sm); border: none;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-accent:hover { background: #0e8a6c; }
+.btn-outline {
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-outline:hover { background: var(--bg); border-color: var(--border-strong); }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-danger { background: var(--danger-light); color: var(--danger); border: 1px solid #fecaca; }
+
+/* ── ACTIONS BAR ── */
+.actions-bar {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
+  position: sticky; bottom: 0; z-index: 50;
+}
+
+/* ── LIDER SELECTOR ── */
+.lider-selector {
+  background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+  color: #fff; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+  padding: 7px 12px; border-radius: var(--radius-sm); cursor: pointer; min-width: 220px;
+}
+.lider-selector option { background: #fff; color: var(--text); }
+
+/* ── PAGE TITLE ── */
+.page-header { margin-bottom: 20px; }
+.page-header h1 { font-size: 20px; font-weight: 600; color: var(--text); }
+.page-header p { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+
+/* ── SEMANA BADGE ── */
+.semana-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--primary); color: #fff;
+  font-size: 12px; font-weight: 600; padding: 5px 12px;
+  border-radius: 20px;
+}
+
+/* ── OBS ── */
+.obs-area {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif;
+  font-size: 13px; color: var(--text); background: var(--bg); resize: vertical;
+  min-height: 72px; line-height: 1.5;
+}
+.obs-area:focus { outline: none; border-color: var(--accent); background: #fff; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 80px; right: 24px; z-index: 9999;
+  background: var(--text); color: #fff; padding: 12px 20px;
+  border-radius: var(--radius); font-size: 13px; font-weight: 500;
+  box-shadow: var(--shadow-md); transform: translateY(20px); opacity: 0;
+  transition: all 0.3s; pointer-events: none;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { background: var(--accent); }
+.toast.error { background: var(--danger); }
+
+/* ── HIDDEN ── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── LEGENDA ── */
+.legenda {
+  display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px;
+  padding: 10px 14px; background: var(--bg); border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.legenda-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); }
+
+/* ── PRINT/PDF STYLES ── */
+@media print {
+  .topbar, .sidebar, .actions-bar { display: none !important; }
+  .main { padding: 0; max-width: 100%; }
+  .card { box-shadow: none; break-inside: avoid; }
+}
+
+/* ── WEEK SELECTOR ── */
+.week-nav { display: flex; align-items: center; gap: 8px; }
+.week-nav select {
+  padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif;
+  font-size: 13px; background: var(--surface); color: var(--text); cursor: pointer;
+}
+
+/* ── EMPTY STATE ── */
+.empty-row td { text-align: center; color: var(--text-muted); font-style: italic; font-size: 12px; padding: 16px !important; background: var(--surface) !important; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">EM</div>
+    <div>
+      <div class="topbar-title">Weekly Business Review</div>
+      <div class="topbar-sub">Easy Market — Gestão de Pessoas</div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <select class="lider-selector" id="liderSelector" onchange="trocarLider(this.value)">
+      <option value="">Selecione um líder...</option>
+    </select>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-label" style="padding: 16px 24px 6px">Navegação</div>
+
+    <div class="sidebar-section">
+      <button class="sidebar-btn active" onclick="showPage('reuniao')" id="nav-reuniao">
+        📋 Conduzir Reunião
+      </button>
+      <button class="sidebar-btn" onclick="showPage('painel')" id="nav-painel">
+        📊 Painel Geral
+      </button>
+    </div>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label" style="padding: 4px 24px 6px">Líderes</div>
+
+    <div class="sidebar-section" id="sidebar-lideres"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- ══ PAGE: REUNIÃO ══ -->
+    <div class="page active" id="page-reuniao">
+
+      <div class="page-header" id="lider-header" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <h1 id="lider-nome-titulo">—</h1>
+            <p id="lider-area-titulo">Selecione um líder para começar</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="week-nav">
+              <label style="font-size:12px;color:var(--text-muted);font-weight:500">Semana:</label>
+              <select id="semanaSelect" onchange="trocarSemana(this.value)">
+                <option value="S1">Semana 1</option>
+                <option value="S2">Semana 2</option>
+                <option value="S3">Semana 3</option>
+                <option value="S4">Semana 4</option>
+                <option value="S5">Semana 5</option>
+                <option value="S6">Semana 6</option>
+                <option value="S7">Semana 7</option>
+                <option value="S8">Semana 8</option>
+              </select>
+            </div>
+            <div class="semana-badge" id="semana-badge">S1</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="empty-state" style="text-align:center;padding:60px 20px;color:var(--text-muted)">
+        <div style="font-size:48px;margin-bottom:16px">📋</div>
+        <div style="font-size:16px;font-weight:500;margin-bottom:8px">Selecione um líder</div>
+        <div style="font-size:13px">Escolha um líder no menu acima ou na barra lateral para iniciar a reunião</div>
+      </div>
+
+      <div id="reuniao-content" style="display:none">
+
+        <!-- META DA REUNIÃO -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="icon" style="background:var(--primary-light)">📅</div>
+              Dados da Reunião
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="meta-grid">
+              <div class="meta-field">
+                <label>Data da reunião</label>
+                <input type="date" id="f-data">
+              </div>
+              <div class="meta-field">
+                <label>Horário</label>
+                <input type="text" id="f-horario" placeholder="Ex: 08:00 às 09:00">
+              </div>
+              <div class="meta-field">
+                <label>Conduzido por</label>
+                <input type="text" id="f-condutor" placeholder="Ex: Gerson e Silmara">
+              </div>
+              <div class="meta-field">
+                <label>Semana de referência</label>
+                <input type="text" id="f-semana-ref" readonly style="background:var(--primary-light);color:var(--primary);font-weight:600">
+              </div>
+            </div>
+            <div class="obj-field">
+              <label>Objetivo da área</label>
+              <textarea id="f-objetivo" rows="2" placeholder="Descreva o objetivo principal desta área..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- INDICADORES -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="icon" style="background:var(--primary-light)">📈</div>
+              Indicadores da Área
+            </div>
+          </div>
+          <div class="card-body" style="padding:0 0 0 0">
+            <div style="overflow-x:auto">
+              <table class="data-table" id="tabela-indicadores">
+                <thead>
+                  <tr>
+                    <th style="text-align:center">#</th>
+                    <th>Indicador</th>
+                    <th>Descrição</th>
+                    <th>Fonte dos dados</th>
+                    <th style="width:100px">Meta</th>
+                    <th style="width:100px">Resultado</th>
+                    <th style="width:140px">Status</th>
+                    <th>Observações</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-indicadores"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TRAVAMENTOS -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="icon" style="background:var(--danger-light)">🚧</div>
+              Travamentos, Riscos e Apoio do CEO
+            </div>
+          </div>
+          <div class="card-body" style="padding:0">
+            <div style="overflow-x:auto">
+              <table class="data-table trav-table" id="tabela-travamentos">
+                <thead>
+                  <tr>
+                    <th style="text-align:center">#</th>
+                    <th>Descrição do Travamento / Risco</th>
+                    <th style="width:90px">Impacto</th>
+                    <th style="width:90px">Urgência</th>
+                    <th>Ação do CEO</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-travamentos"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOLLOW-UP -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="icon" style="background:#f0f4f8">🔁</div>
+              Follow-up — Combinados da Reunião Anterior
+            </div>
+            <span id="followup-semana-label" style="font-size:11px;color:var(--text-muted)"></span>
+          </div>
+          <div class="card-body" style="padding:0">
+            <div style="overflow-x:auto">
+              <table class="data-table followup-table">
+                <thead>
+                  <tr>
+                    <th style="text-align:center">#</th>
+                    <th>Combinado / Ação</th>
+                    <th style="width:120px">Responsável</th>
+                    <th style="width:90px">Prazo</th>
+                    <th style="width:140px">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-followup"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- NOVOS COMBINADOS -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="icon" style="background:var(--accent-light)">✅</div>
+              Novos Combinados desta Semana
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="addCombinado()">+ Adicionar</button>
+          </div>
+          <div class="card-body" style="padding:0">
+            <div style="overflow-x:auto">
+              <table class="data-table new-comb-table">
+                <thead>
+                  <tr>
+                    <th style="text-align:center">#</th>
+                    <th>Combinado / Ação</th>
+                    <th style="width:120px">Responsável</th>
+                    <th style="width:90px">Prazo</th>
+                    <th style="width:140px">Status</th>
+                    <th style="width:40px"></th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-combinados"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- OBSERVAÇÕES -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="icon" style="background:var(--bg)">📝</div>
+              Observações Gerais da Reunião
+            </div>
+          </div>
+          <div class="card-body">
+            <textarea class="obs-area" id="f-observacoes" placeholder="Registre aqui pontos importantes discutidos na reunião que não se encaixam nas seções acima..."></textarea>
+          </div>
+        </div>
+
+        <!-- HISTÓRICO -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="icon" style="background:#f0f4f0">📊</div>
+              Histórico Semanal de Indicadores
+            </div>
+          </div>
+          <div class="card-body" style="padding:0;overflow-x:auto">
+            <table class="data-table hist-table" id="tabela-historico">
+              <thead>
+                <tr>
+                  <th style="text-align:left;min-width:180px">Indicador</th>
+                  <th>S1</th><th>S2</th><th>S3</th><th>S4</th>
+                  <th>S5</th><th>S6</th><th>S7</th><th>S8</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-historico"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /reuniao-content -->
+
+      <!-- LEGENDA -->
+      <div id="legenda-box" style="display:none">
+        <div class="legenda">
+          <div class="legenda-item"><span class="badge badge-ok">✓</span> Meta atingida</div>
+          <div class="legenda-item"><span class="badge badge-warn">⚠</span> Parcialmente atingida</div>
+          <div class="legenda-item"><span class="badge badge-bad">✗</span> Não atingida</div>
+          <div class="legenda-item"><span class="badge badge-na">—</span> Não realizada</div>
+        </div>
+      </div>
+
+    </div><!-- /page-reuniao -->
+
+    <!-- ══ PAGE: PAINEL GERAL ══ -->
+    <div class="page" id="page-painel">
+      <div class="page-header">
+        <h1>Painel Geral</h1>
+        <p>Visão consolidada de todas as lideranças</p>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <table class="data-table painel-table" id="tabela-painel">
+            <thead>
+              <tr>
+                <th style="text-align:left;min-width:150px">Líder</th>
+                <th style="text-align:left;min-width:160px">Área</th>
+                <th style="text-align:center;width:60px">S1</th>
+                <th style="text-align:center;width:60px">S2</th>
+                <th style="text-align:center;width:60px">S3</th>
+                <th style="text-align:center;width:60px">S4</th>
+                <th style="text-align:center;width:60px">S5</th>
+                <th style="text-align:center;width:60px">S6</th>
+                <th style="text-align:center;width:60px">S7</th>
+                <th style="text-align:center;width:60px">S8</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-painel"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="legenda">
+        <div class="legenda-item"><span class="status-dot" style="background:var(--success-light);color:#065f46">✓</span> Todos atingidos</div>
+        <div class="legenda-item"><span class="status-dot" style="background:var(--warning-light);color:#92400e">⚠</span> Parcial</div>
+        <div class="legenda-item"><span class="status-dot" style="background:var(--danger-light);color:#991b1b">✗</span> Abaixo</div>
+        <div class="legenda-item"><span class="status-dot" style="background:#e8f0fe;color:#3b5bdb;font-size:10px">R</span> Realizada s/ status</div>
+        <div class="legenda-item"><span class="status-dot" style="background:var(--bg);color:var(--text-muted);border:1px solid var(--border);font-size:10px">—</span> Não realizada</div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- ACTIONS BAR -->
+<div class="actions-bar" id="actions-bar" style="display:none">
+  <div style="font-size:12px;color:var(--text-muted)" id="last-saved">Não salvo ainda</div>
+  <div style="display:flex;gap:10px">
+    <button class="btn btn-outline" onclick="exportarPDF()">📄 Exportar PDF</button>
+    <button class="btn btn-accent" onclick="salvarSemana()">💾 Salvar Semana</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// DADOS DOS LÍDERES
+// ══════════════════════════════════════════════
+const LIDERES = [
+  {
+    id: "lucas_moreno", nome: "Lucas Moreno", area: "🚀 Expansão",
+    objetivo: "Expandir a base de licenciados e novos produtos, garantindo crescimento saudável do faturamento e previsibilidade comercial.",
+    indicadores: [
+      { label:"IND 1", nome:"Faturamento da semana (R$)", descricao:"Faturamento por Closer", fonte:"Painel Easy", meta:"R$50.000" },
+      { label:"IND 2", nome:"Reuniões agendadas", descricao:"Reunião por SDR", fonte:"Painel Easy", meta:"50" },
+      { label:"IND 3", nome:"", descricao:"", fonte:"", meta:"" },
+      { label:"IND 4", nome:"", descricao:"", fonte:"", meta:"" },
+      { label:"VAR", nome:"", descricao:"", fonte:"", meta:"" },
+    ],
+    travamentos: [
+      { descricao:"Substituição da Camila — desligar dia 01/06", impacto:"Alto", urgencia:"Alto", acao:"Contratação de novo Closer" },
+      { descricao:"Ferramenta de SDR — Precisa metrificar melhor os dados do SDR = Meet time (Indicação do Rafael)", impacto:"Alto", urgencia:"Média", acao:"Pesquisar/desenvolver ferramenta" },
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+    ],
+    historico_s1: {
+      data:"26/05/2026", horario:"8:05 às 9:15", condutor:"Gerson e Silmara",
+      observacoes:"Rafael (SDR) com bom feedback. Silmara irá buscar 2 novos Closer e 2 novos SDR (Kelly e Gabriele provavelmente irão sair com a pressão). Gerson irá verificar se o Yuri vem palestrar para os Closers. Pós-venda demorando para retornar para o Licenciado (Reclamação de Licenciados, ex: Isabela RJ)",
+      indicadores:[
+        { label:"IND 1", nome:"Faturamento da semana (R$)", descricao:"Faturamento por Closer", fonte:"Painel Easy", meta:"R$50.000", resultado:"R$190.000", status:"ok", obs:"" },
+        { label:"IND 2", nome:"Primeiras reuniões realizadas", descricao:"Reunião por SDR", fonte:"Painel Easy", meta:"50", resultado:"37", status:"bad", obs:"" },
+        { label:"IND 3", nome:"Novos licenciados fechados", descricao:"", fonte:"", meta:"", resultado:"10", status:"", obs:"" },
+        { label:"IND 4", nome:"Ticket médio por Closer (R$)", descricao:"", fonte:"", meta:"", resultado:"R$63.000", status:"", obs:"" },
+        { label:"VAR", nome:"Conversão reunião → venda (%)", descricao:"", fonte:"", meta:"", resultado:"27%", status:"", obs:"" },
+      ],
+      travamentos:[
+        { descricao:"Substituição da Camila — desligar dia 01/06", impacto:"Alto", urgencia:"Alto", acao:"Contratação de novo Closer" },
+        { descricao:"Ferramenta de SDR — Precisa metrificar melhor os dados do SDR = Meet time (Indicação do Rafael)", impacto:"Alto", urgencia:"Média", acao:"Pesquisar/desenvolver ferramenta" },
+      ],
+      combinados:[
+        { acao:"Trazer soluções para que o SDR traga mais resultado.", responsavel:"Yasmin", prazo:"7 dias", status:"" },
+        { acao:"Horários, Closers que começam mais tarde, para reuniões até 20:00, 22:00 fim do expediente.", responsavel:"Lucas", prazo:"7 dias", status:"" },
+      ]
+    }
+  },
+  {
+    id: "daniele_estrela", nome: "Daniele Estrela", area: "🏢 Comercial PDV",
+    objetivo: "Gerar novos contratos de PDVs para todos os produtos da empresa, aumentando o número total de UHs da base.",
+    indicadores: [
+      { label:"IND 1", nome:"Contratos por Vendedor", descricao:"Contratos por vendedor", fonte:"Planilha de previsão de fechamento", meta:"2" },
+      { label:"IND 2", nome:"Total de UHs vendidas", descricao:"Número de unidades habitacionais adicionadas pelos contratos da semana.", fonte:"RD ou Lists", meta:"4500" },
+      { label:"IND 3", nome:"", descricao:"", fonte:"", meta:"" },
+      { label:"IND 4", nome:"", descricao:"", fonte:"", meta:"" },
+      { label:"VAR", nome:"", descricao:"", fonte:"", meta:"" },
+    ],
+    travamentos: [
+      { descricao:"Jurídico — 10% dos contratos", impacto:"", urgencia:"", acao:"" },
+      { descricao:"Rotina, ritmo e ritual", impacto:"", urgencia:"", acao:"" },
+      { descricao:"Treinamento dos produtos", impacto:"", urgencia:"", acao:"" },
+    ],
+    historico_s1: {
+      data:"26/05/2026", horario:"9:15 às 11:00", condutor:"Gerson e Silmara",
+      observacoes:"Demissão: Carla, Fabio e Lahayne — Daniele vai conversar para realinhamento. Se não houver correção de rota, serão encaminhados para que processe o desligamento.",
+      indicadores:[
+        { label:"IND 1", nome:"Contratos por Vendedor", descricao:"Contratos por vendedor", fonte:"Planilha de previsão de fechamento", meta:"2", resultado:"2", status:"ok", obs:"" },
+        { label:"IND 2", nome:"Total de UHs vendidas", descricao:"Número de UHs adicionadas pelos contratos da semana.", fonte:"RD ou Lists", meta:"4500", resultado:"3700", status:"bad", obs:"" },
+        { label:"IND 3", nome:"", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+        { label:"IND 4", nome:"", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+        { label:"VAR", nome:"", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+      ],
+      travamentos:[
+        { descricao:"Jurídico — 10% dos contratos", impacto:"", urgencia:"", acao:"" },
+        { descricao:"Rotina, ritmo e ritual", impacto:"", urgencia:"", acao:"" },
+        { descricao:"Treinamento dos produtos", impacto:"", urgencia:"", acao:"" },
+      ],
+      combinados:[
+        { acao:"Estabelecer rotina (com ligações 30 ligações por dia), envio de propostas.", responsavel:"", prazo:"", status:"" },
+      ]
+    }
+  },
+  {
+    id: "andrei_almeida", nome: "Andrei Almeida", area: "🤝 Relacionamento",
+    objetivo: "Monetizar a base de licenciados e síndicos através de implantação própria, novos produtos e intermediação.",
+    indicadores: [
+      { label:"IND 1", nome:"Receita de implantação própria (R$)", descricao:"Faturamento gerado por projetos de implantação conduzidos diretamente pela área.", fonte:"ERP / Relatório Financeiro", meta:"R$48.750" },
+      { label:"IND 2", nome:"Receita de novos produtos (R$)", descricao:"Receita originada por venda de novos produtos à base de licenciados.", fonte:"CRM / Relatório de Receita", meta:"R$40.000" },
+      { label:"IND 3", nome:"Receita de intermediação (R$)", descricao:"Comissões e receitas de intermediação geradas pela área no período.", fonte:"ERP / Relatório Financeiro", meta:"R$18.900" },
+      { label:"IND 4", nome:"Quantidade de cross-sells", descricao:"Número de vendas adicionais realizadas na base de licenciados/síndicos.", fonte:"ANALISAR CHURN", meta:"" },
+      { label:"VAR", nome:"Licenciados/síndicos ativados", descricao:"Número de clientes da base que geraram receita ou interação relevante na semana.", fonte:"CONTRAINER", meta:"" },
+    ],
+    travamentos: [
+      { descricao:"Implantação própria não chega — Andrei que busca", impacto:"Alto", urgencia:"Média", acao:"Colocar regras de direcionamento de Imp. Própria" },
+      { descricao:"Gasta tempo e energia precificando PDV para venda", impacto:"Alto", urgencia:"Média", acao:"Calculadora baseada no projeto para precificar custo da Implantação própria" },
+      { descricao:"Não consegue disparar para Contrainer, síndico e licenciado", impacto:"Alto", urgencia:"Alto", acao:"Gerson verificar BM" },
+      { descricao:"Comercial voltar a usar o robô de atualização do RD", impacto:"Alto", urgencia:"Média", acao:"Calculadora baseada no projeto para precificar custo da Implantação própria" },
+    ],
+    historico_s1: {
+      data:"26/05/2026", horario:"11:15 às 13:36", condutor:"Lucas, Gerson e Silmara",
+      observacoes:"CSM e CSE precisam de um Supervisor. Andrei precisa criar o Playbook do que o CSM precisa fazer de Seg a Sexta das 8:00 às 18:00. O que o Andrei precisa saber sobre o PDV quando ele estiver para inaugurar. Criar agenda pós-inauguração.",
+      indicadores:[
+        { label:"IND 1", nome:"Receita de implantação própria (R$)", descricao:"", fonte:"ERP / Relatório Financeiro", meta:"R$48.750", resultado:"", status:"", obs:"" },
+        { label:"IND 2", nome:"Receita de novos produtos (R$)", descricao:"", fonte:"CRM / Relatório de Receita", meta:"R$40.000", resultado:"", status:"", obs:"" },
+        { label:"IND 3", nome:"Receita de intermediação (R$)", descricao:"", fonte:"ERP / Relatório Financeiro", meta:"R$18.900", resultado:"", status:"", obs:"" },
+        { label:"IND 4", nome:"Quantidade de cross-sells", descricao:"", fonte:"ANALISAR CHURN", meta:"", resultado:"", status:"", obs:"" },
+        { label:"VAR", nome:"Licenciados/síndicos ativados", descricao:"", fonte:"CONTRAINER", meta:"", resultado:"", status:"", obs:"" },
+      ],
+      travamentos:[
+        { descricao:"Implantação própria não chega — Andrei que busca", impacto:"Alto", urgencia:"Média", acao:"Colocar regras de direcionamento de Imp. Própria" },
+        { descricao:"Gasta tempo e energia precificando PDV para venda", impacto:"Alto", urgencia:"Média", acao:"Calculadora baseada no projeto para precificar custo da Implantação própria" },
+        { descricao:"Não consegue disparar para Contrainer, síndico e licenciado", impacto:"Alto", urgencia:"Alto", acao:"Gerson verificar BM" },
+        { descricao:"Comercial voltar a usar o robô de atualização do RD", impacto:"Alto", urgencia:"Média", acao:"" },
+      ],
+      combinados:[]
+    }
+  },
+  {
+    id: "tom_gabriela", nome: "Tom e Gabriela", area: "🎥 Marketing & Growth",
+    objetivo: "Fortalecer a marca, gerar autoridade e criar demanda qualificada para os times comerciais.",
+    indicadores: [
+      { label:"IND 1", nome:"Faturamento por semana", descricao:"", fonte:"RD Station / CRM", meta:"" },
+      { label:"IND 2", nome:"Alcance Instagram semana", descricao:"", fonte:"API / Business Suite", meta:"" },
+      { label:"IND 3", nome:"", descricao:"", fonte:"", meta:"" },
+      { label:"IND 4", nome:"", descricao:"", fonte:"", meta:"" },
+      { label:"VAR", nome:"", descricao:"", fonte:"", meta:"" },
+    ],
+    travamentos: [
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+    ],
+    historico_s1: {
+      data:"26/05/2026", horario:"15:45 às 17:15", condutor:"Lucas, Gerson e Silmara",
+      observacoes:"CAC ROAS LEADS de cada marca = Tom. Framework para Gabi de produção de conteúdo baseado no que funciona. Tom não está dando conta da demanda — informou que precisa de braço para gestão de tráfego.",
+      indicadores:[
+        { label:"IND 1", nome:"Faturamento por semana", descricao:"", fonte:"RD Station / CRM", meta:"", resultado:"", status:"", obs:"" },
+        { label:"IND 2", nome:"Alcance Instagram semana", descricao:"", fonte:"API / Business Suite", meta:"", resultado:"", status:"", obs:"" },
+        { label:"IND 3", nome:"", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+        { label:"IND 4", nome:"", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+        { label:"VAR", nome:"", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+      ],
+      travamentos:[],
+      combinados:[
+        { acao:"Cumprir a agenda das redes sociais", responsavel:"", prazo:"", status:"" },
+      ]
+    }
+  },
+  {
+    id: "glaucio_eurimar", nome: "Glaucio e Eurimar", area: "📐 Arquitetura & Implantação",
+    objetivo: "Garantir velocidade e qualidade na entrega de projetos arquitetônicos e inauguração de lojas.",
+    indicadores: [
+      { label:"IND 1", nome:"Projetos realizados", descricao:"", fonte:"LISTS-0009", meta:"" },
+      { label:"IND 2", nome:"Memorial de Arquitetura", descricao:"", fonte:"", meta:"" },
+      { label:"IND 3", nome:"Lojas inauguradas", descricao:"", fonte:"LISTS-0002", meta:"" },
+      { label:"IND 4", nome:"Desistência de implantação", descricao:"", fonte:"LISTS-0047", meta:"" },
+      { label:"VAR", nome:"Ativação de fornecedores", descricao:"", fonte:"Controles de ativação", meta:"" },
+    ],
+    travamentos: [
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+    ],
+    historico_s1: {
+      data:"26/05/2026", horario:"17:20 às 18:30", condutor:"Lucas, Gerson e Silmara",
+      observacoes:"",
+      indicadores:[
+        { label:"IND 1", nome:"Projetos realizados", descricao:"", fonte:"LISTS-0009", meta:"", resultado:"31", status:"", obs:"" },
+        { label:"IND 2", nome:"Memorial de Arquitetura", descricao:"", fonte:"", meta:"", resultado:"13", status:"", obs:"" },
+        { label:"IND 3", nome:"Lojas inauguradas", descricao:"", fonte:"LISTS-0002", meta:"", resultado:"8", status:"", obs:"" },
+        { label:"IND 4", nome:"Desistência de implantação", descricao:"", fonte:"LISTS-0047", meta:"", resultado:"1", status:"", obs:"" },
+        { label:"VAR", nome:"Ativação de fornecedores", descricao:"", fonte:"Controles de ativação", meta:"", resultado:"", status:"", obs:"" },
+      ],
+      travamentos:[],
+      combinados:[]
+    }
+  },
+  {
+    id: "sabrina_rocha", nome: "Sabrina Rocha", area: "⚖️ Jurídico",
+    objetivo: "Garantir segurança jurídica, velocidade contratual e mitigação de riscos operacionais.",
+    indicadores: [
+      { label:"IND 1", nome:"SLA", descricao:"4 dias úteis", fonte:"E-mails", meta:"" },
+      { label:"IND 2", nome:"Contratos pendentes (acumulado)", descricao:"Total de contratos aguardando análise, assinatura ou pendência de cliente. Preencher total, mas ter o dado por área.", fonte:"Sistema Jurídico / Drive", meta:"" },
+      { label:"IND 3", nome:"Notificações/processos críticos", descricao:"Número de notificações extrajudiciais ou processos críticos ativos no período.", fonte:"Sistema Jurídico", meta:"" },
+      { label:"IND 4", nome:"Conversão de contratos (%)", descricao:"Dos contratos que vão para o Jurídico, quantos convertem em vendas.", fonte:"", meta:"" },
+      { label:"VAR", nome:"", descricao:"", fonte:"", meta:"" },
+    ],
+    travamentos: [
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+    ],
+    historico_s1: {
+      data:"01/06/2026", horario:"13:00 às 15:45", condutor:"Gerson e Silmara",
+      observacoes:"",
+      indicadores:[
+        { label:"IND 1", nome:"SLA", descricao:"4 dias úteis", fonte:"E-mails", meta:"", resultado:"", status:"", obs:"" },
+        { label:"IND 2", nome:"Contratos pendentes (acumulado)", descricao:"", fonte:"Sistema Jurídico / Drive", meta:"", resultado:"", status:"", obs:"" },
+        { label:"IND 3", nome:"Notificações/processos críticos", descricao:"", fonte:"Sistema Jurídico", meta:"", resultado:"", status:"", obs:"" },
+        { label:"IND 4", nome:"Conversão de contratos (%)", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+        { label:"VAR", nome:"", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+      ],
+      travamentos:[],
+      combinados:[]
+    }
+  },
+  {
+    id: "ana_carla", nome: "Ana Carla", area: "💰 Financeiro",
+    objetivo: "Garantir saúde financeira, previsibilidade de caixa e sustentabilidade do crescimento.",
+    indicadores: [
+      { label:"IND 1", nome:"Faturamento total", descricao:"Projeção do saldo de caixa disponível para os próximos 30 dias.", fonte:"", meta:"" },
+      { label:"IND 2", nome:"Inadimplência total (R$)", descricao:"Valor total em aberto de clientes com pagamentos vencidos.", fonte:"", meta:"" },
+      { label:"IND 3", nome:"", descricao:"", fonte:"", meta:"" },
+      { label:"IND 4", nome:"", descricao:"", fonte:"", meta:"" },
+      { label:"VAR", nome:"", descricao:"", fonte:"", meta:"" },
+    ],
+    travamentos: [
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+    ],
+    historico_s1: {
+      data:"01/06/2026", horario:"16:00 às 17:30", condutor:"Gerson e Silmara",
+      observacoes:"",
+      indicadores:[
+        { label:"IND 1", nome:"Faturamento total", descricao:"Projeção do saldo de caixa disponível para os próximos 30 dias.", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+        { label:"IND 2", nome:"Inadimplência total (R$)", descricao:"Valor total em aberto de clientes com pagamentos vencidos.", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+        { label:"IND 3", nome:"", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+        { label:"IND 4", nome:"", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+        { label:"VAR", nome:"", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+      ],
+      travamentos:[],
+      combinados:[
+        { acao:"Seguir com a contratação da Aline e avaliar a permanência dela ou da Andressa em 90 dias. A aprovação é ter apenas 3 no financeiro.", responsavel:"", prazo:"", status:"" },
+      ]
+    }
+  },
+  {
+    id: "lucas_soares", nome: "Lucas Soares", area: "🧠 PMO & TI",
+    objetivo: "Aumentar produtividade operacional através de automação, IA, processos e gestão de projetos.",
+    indicadores: [
+      { label:"IND 1", nome:"", descricao:"", fonte:"", meta:"" },
+      { label:"IND 2", nome:"", descricao:"", fonte:"", meta:"" },
+      { label:"IND 3", nome:"Automações implantadas", descricao:"Quantidade de automações ou integrações entregues e em uso no período.", fonte:"Planilha de TI / Make / N8N", meta:"" },
+      { label:"IND 4", nome:"Horas economizadas estimadas", descricao:"Estimativa de horas/semana economizadas pelas automações entregues.", fonte:"Planilha de Automações", meta:"" },
+      { label:"VAR", nome:"Segurança de dados", descricao:"Número de gargalos de processo identificados e registrados para resolução.", fonte:"Planilha de Processos / CRM", meta:"" },
+    ],
+    travamentos: [
+      { descricao:"Segurança das informações — para que o Felipe aplique", impacto:"", urgencia:"", acao:"" },
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+    ],
+    historico_s1: {
+      data:"01/06/2026", horario:"18:30 às —", condutor:"Gerson e Silmara",
+      observacoes:"",
+      indicadores:[
+        { label:"IND 1", nome:"", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+        { label:"IND 2", nome:"", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+        { label:"IND 3", nome:"Automações implantadas", descricao:"", fonte:"Planilha de TI / Make / N8N", meta:"", resultado:"", status:"", obs:"" },
+        { label:"IND 4", nome:"Horas economizadas estimadas", descricao:"", fonte:"Planilha de Automações", meta:"", resultado:"", status:"", obs:"" },
+        { label:"VAR", nome:"Segurança de dados", descricao:"", fonte:"Planilha de Processos / CRM", meta:"", resultado:"", status:"", obs:"" },
+      ],
+      travamentos:[
+        { descricao:"Segurança das informações — para que o Felipe aplique", impacto:"", urgencia:"", acao:"" },
+      ],
+      combinados:[
+        { acao:"Segurança das informações — para que o Felipe aplique.", responsavel:"", prazo:"", status:"" },
+      ]
+    }
+  },
+  {
+    id: "silmara_gama", nome: "Silmara Gama", area: "👥 RH & Pessoas",
+    objetivo: "Garantir que a empresa tenha as pessoas certas, no lugar certo, engajadas e desenvolvendo-se continuamente.",
+    indicadores: [
+      { label:"IND 1", nome:"Novas vagas", descricao:"", fonte:"", meta:"" },
+      { label:"IND 2", nome:"Novas contratações", descricao:"", fonte:"", meta:"" },
+      { label:"IND 3", nome:"SLA", descricao:"", fonte:"", meta:"" },
+      { label:"IND 4", nome:"Desligamentos totais", descricao:"", fonte:"", meta:"" },
+      { label:"IND 5", nome:"Desligamento dentro de 90 dias", descricao:"", fonte:"", meta:"" },
+      { label:"VAR", nome:"", descricao:"", fonte:"", meta:"" },
+    ],
+    travamentos: [
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+      { descricao:"", impacto:"", urgencia:"", acao:"" },
+    ],
+    historico_s1: {
+      data:"", horario:"", condutor:"",
+      observacoes:"",
+      indicadores:[
+        { label:"IND 1", nome:"Novas vagas", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+        { label:"IND 2", nome:"Novas contratações", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+        { label:"IND 3", nome:"SLA", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+        { label:"IND 4", nome:"Desligamentos totais", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+        { label:"IND 5", nome:"Desligamento dentro de 90 dias", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+        { label:"VAR", nome:"", descricao:"", fonte:"", meta:"", resultado:"", status:"", obs:"" },
+      ],
+      travamentos:[],
+      combinados:[]
+    }
+  },
+];
+
+const SEMANAS = ["S1","S2","S3","S4","S5","S6","S7","S8"];
+const STATUS_OPTIONS = [
+  { value:"", label:"— Selecione" },
+  { value:"ok", label:"✓ Meta atingida" },
+  { value:"warn", label:"⚠ Parcialmente atingida" },
+  { value:"bad", label:"✗ Não atingida" },
+  { value:"na", label:"— Não realizada" },
+];
+const IMPACTO_OPTIONS = ["","Alto","Médio","Baixo"];
+const URGENCIA_OPTIONS = ["","Alto","Média","Baixa"];
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let currentLiderId = null;
+let currentSemana = "S1";
+let _cache = {}; // cache local para leitura rápida
+
+function getKey(lid, sem) { return `wbr_${lid}_${sem}`; }
+
+// Salva no Firebase + cache local
+async function saveToStorage(lid, sem, data) {
+  const key = getKey(lid, sem);
+  _cache[key] = data;
+  localStorage.setItem(key, JSON.stringify(data)); // fallback
+  if (window._fbReady) {
+    await window._fbSave(lid, sem, data);
+  }
+}
+
+// Carrega do cache > Firebase > localStorage
+async function loadFromStorage(lid, sem) {
+  const key = getKey(lid, sem);
+  if (_cache[key]) return _cache[key];
+
+  if (window._fbReady) {
+    const remote = await window._fbLoad(lid, sem);
+    if (remote) { _cache[key] = remote; return remote; }
+  }
+
+  // fallback localStorage
+  const raw = localStorage.getItem(key);
+  if (raw) { const parsed = JSON.parse(raw); _cache[key] = parsed; return parsed; }
+  return null;
+}
+
+function getPainelStatus(lid, sem) {
+  const key = getKey(lid, sem);
+  const d = _cache[key];
+  // Sem dado algum = não realizada
+  if (!d) return null;
+  // Tem dado mas sem indicadores preenchidos = reunião realizada, sem status
+  if (!d.indicadores) return "realizada";
+  const statuses = d.indicadores.map(i => i.status).filter(s => s && s !== "");
+  // Tem dado mas nenhum status preenchido = reunião realizada
+  if (!statuses.length) return "realizada";
+  if (statuses.every(s => s === "ok")) return "ok";
+  if (statuses.some(s => s === "bad")) return statuses.every(s => s === "bad") ? "bad" : "warn";
+  if (statuses.some(s => s === "warn")) return "warn";
+  return "ok";
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+function init() {
+  const sel = document.getElementById("liderSelector");
+  const sidebar = document.getElementById("sidebar-lideres");
+
+  LIDERES.forEach(l => {
+    const opt = document.createElement("option");
+    opt.value = l.id;
+    opt.textContent = l.nome + " — " + l.area;
+    sel.appendChild(opt);
+
+    const btn = document.createElement("button");
+    btn.className = "sidebar-btn";
+    btn.id = "sidebar-btn-" + l.id;
+    btn.innerHTML = `<span style="font-size:16px">${l.area.split(" ")[0]}</span> ${l.nome}`;
+    btn.onclick = () => trocarLider(l.id);
+    sidebar.appendChild(btn);
+
+    // Pré-carregar historico_s1 no cache se ainda não houver dado salvo
+    if (l.historico_s1 && l.historico_s1.data) {
+      const key = getKey(l.id, "S1");
+      const existing = localStorage.getItem(key);
+      if (!existing) {
+        const s1data = { ...l.historico_s1 };
+        _cache[key] = s1data;
+        localStorage.setItem(key, JSON.stringify(s1data));
+        // Também salva no Firebase quando estiver pronto
+        document.addEventListener("fbReady", () => {
+          window._fbSave(l.id, "S1", s1data);
+        }, { once: false });
+      } else {
+        _cache[key] = JSON.parse(existing);
+      }
+    }
+  });
+
+  renderPainel();
+}
+
+// ══════════════════════════════════════════════
+// NAVEGAÇÃO
+// ══════════════════════════════════════════════
+function showPage(page) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".sidebar-btn[id^='nav-']").forEach(b => b.classList.remove("active"));
+  document.getElementById("page-" + page).classList.add("active");
+  document.getElementById("nav-" + page).classList.add("active");
+}
+
+async function trocarLider(lidId) {
+  if (!lidId) return;
+  currentLiderId = lidId;
+  showToast("Carregando dados...");
+
+  document.getElementById("liderSelector").value = lidId;
+  document.querySelectorAll(".sidebar-btn[id^='sidebar-btn-']").forEach(b => b.classList.remove("active"));
+  const sb = document.getElementById("sidebar-btn-" + lidId);
+  if (sb) sb.classList.add("active");
+
+  const lider = LIDERES.find(l => l.id === lidId);
+  document.getElementById("lider-nome-titulo").textContent = lider.nome;
+  document.getElementById("lider-area-titulo").textContent = lider.area;
+  document.getElementById("lider-header").style.display = "";
+  document.getElementById("empty-state").style.display = "none";
+  document.getElementById("reuniao-content").style.display = "";
+  document.getElementById("legenda-box").style.display = "";
+  document.getElementById("actions-bar").style.display = "";
+
+  showPage("reuniao");
+  await renderSemana();
+}
+
+async function trocarSemana(sem) {
+  currentSemana = sem;
+  document.getElementById("semana-badge").textContent = sem;
+  await renderSemana();
+}
+
+// ══════════════════════════════════════════════
+// RENDER SEMANA
+// ══════════════════════════════════════════════
+async function renderSemana() {
+  if (!currentLiderId) return;
+  const lider = LIDERES.find(l => l.id === currentLiderId);
+
+  // Limpa campos visualmente enquanto carrega
+  document.getElementById("f-data").value = "";
+  document.getElementById("f-horario").value = "";
+  document.getElementById("f-condutor").value = "";
+  document.getElementById("f-semana-ref").value = currentSemana;
+  document.getElementById("f-objetivo").value = lider.objetivo;
+  document.getElementById("f-observacoes").value = "";
+
+  const saved = await loadFromStorage(currentLiderId, currentSemana) || null;
+
+  // Preenche com dados salvos se existirem
+  if (saved) {
+    document.getElementById("f-data").value = saved.data || "";
+    document.getElementById("f-horario").value = saved.horario || "";
+    document.getElementById("f-condutor").value = saved.condutor || "";
+    document.getElementById("f-objetivo").value = saved.objetivo !== undefined ? saved.objetivo : lider.objetivo;
+    document.getElementById("f-observacoes").value = saved.observacoes || "";
+  }
+
+  renderIndicadores(lider, saved || {});
+  renderTravamentos(lider, saved || {});
+  await renderFollowUp(lider);
+  renderCombinados(lider, saved || {});
+  renderHistorico(lider);
+}
+
+// ── INDICADORES ──
+function renderIndicadores(lider, saved) {
+  const tbody = document.getElementById("tbody-indicadores");
+  tbody.innerHTML = "";
+  const savedInds = saved.indicadores || [];
+
+  lider.indicadores.forEach((ind, i) => {
+    const s = savedInds[i] || {};
+    const isVar = ind.label === "VAR";
+    const tr = document.createElement("tr");
+    if (isVar) tr.className = "var-row";
+
+    const statusSel = STATUS_OPTIONS.map(o =>
+      `<option value="${o.value}" ${(s.status||"")==o.value?"selected":""}>${o.label}</option>`
+    ).join("");
+
+    tr.innerHTML = `
+      <td class="num-col ${isVar?'teal':''}">${isVar ? "V" : ind.label.replace("IND ","")}</td>
+      <td><input type="text" value="${esc(s.nome !== undefined ? s.nome : ind.nome)}" placeholder="Nome do indicador" data-field="nome" data-idx="${i}"></td>
+      <td><input type="text" value="${esc(s.descricao !== undefined ? s.descricao : ind.descricao)}" placeholder="Descrição" data-field="descricao" data-idx="${i}"></td>
+      <td><input type="text" value="${esc(s.fonte !== undefined ? s.fonte : ind.fonte)}" placeholder="Fonte dos dados" data-field="fonte" data-idx="${i}" style="font-style:italic;color:var(--text-muted)"></td>
+      <td class="center"><input type="text" value="${esc(s.meta||"")}" placeholder="Meta" data-field="meta" data-idx="${i}" style="text-align:center"></td>
+      <td class="center"><input type="text" value="${esc(s.resultado||"")}" placeholder="Resultado" data-field="resultado" data-idx="${i}" style="text-align:center;font-weight:600"></td>
+      <td><select data-field="status" data-idx="${i}" onchange="updateStatusBadge(this)">${statusSel}</select></td>
+      <td><input type="text" value="${esc(s.obs||"")}" placeholder="Observações" data-field="obs" data-idx="${i}"></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateStatusBadge(sel) { /* visual only — saves on salvarSemana */ }
+
+// ── TRAVAMENTOS ──
+function renderTravamentos(lider, saved) {
+  const tbody = document.getElementById("tbody-travamentos");
+  tbody.innerHTML = "";
+  const savedTrav = saved.travamentos || [];
+
+  lider.travamentos.forEach((t, i) => {
+    const s = savedTrav[i] || {};
+    const tr = document.createElement("tr");
+
+    const impOpts = IMPACTO_OPTIONS.map(o =>
+      `<option value="${o}" ${(s.impacto !== undefined ? s.impacto : t.impacto) === o ? "selected" : ""}>${o || "— Selecione"}</option>`
+    ).join("");
+    const urgOpts = URGENCIA_OPTIONS.map(o =>
+      `<option value="${o}" ${(s.urgencia !== undefined ? s.urgencia : t.urgencia) === o ? "selected" : ""}>${o || "— Selecione"}</option>`
+    ).join("");
+
+    tr.innerHTML = `
+      <td class="num-col">${i + 1}</td>
+      <td><textarea data-trav-field="descricao" data-idx="${i}" style="height:38px;resize:none">${esc(s.descricao !== undefined ? s.descricao : t.descricao)}</textarea></td>
+      <td><select data-trav-field="impacto" data-idx="${i}">${impOpts}</select></td>
+      <td><select data-trav-field="urgencia" data-idx="${i}">${urgOpts}</select></td>
+      <td><textarea data-trav-field="acao" data-idx="${i}" style="height:38px;resize:none">${esc(s.acao !== undefined ? s.acao : t.acao)}</textarea></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Linha para adicionar
+  const trAdd = document.createElement("tr");
+  trAdd.innerHTML = `<td colspan="5" class="empty-row" style="cursor:pointer" onclick="addTravamento()">+ Adicionar travamento</td>`;
+  tbody.appendChild(trAdd);
+}
+
+function addTravamento() {
+  const lider = LIDERES.find(l => l.id === currentLiderId);
+  lider.travamentos.push({ descricao:"", impacto:"", urgencia:"", acao:"" });
+  const saved = _cache[getKey(currentLiderId, currentSemana)] || {};
+  renderTravamentos(lider, saved);
+}
+
+// ── FOLLOW-UP ──
+async function renderFollowUp(lider) {
+  const tbody = document.getElementById("tbody-followup");
+  tbody.innerHTML = "";
+
+  const semIdx = SEMANAS.indexOf(currentSemana);
+  const semAnterior = semIdx > 0 ? SEMANAS[semIdx - 1] : null;
+  const label = document.getElementById("followup-semana-label");
+
+  if (!semAnterior) {
+    label.textContent = "Primeira semana — sem combinados anteriores";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="5" class="empty-row">Nenhum combinado registrado na semana anterior</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+
+  label.textContent = `Referência: ${semAnterior}`;
+  const prevData = await loadFromStorage(currentLiderId, semAnterior);
+  const combs = prevData && prevData.combinados ? prevData.combinados : [];
+
+  if (!combs.length || combs.every(c => !c.acao)) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="5" class="empty-row">Nenhum combinado registrado em ${semAnterior}</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+
+  combs.filter(c => c.acao).forEach((c, i) => {
+    const tr = document.createElement("tr");
+    const statusSel = STATUS_OPTIONS.map(o =>
+      `<option value="${o.value}" ${(c.followup_status||"")==o.value?"selected":""}>${o.label}</option>`
+    ).join("");
+    tr.innerHTML = `
+      <td class="num-col">${i + 1}</td>
+      <td>${esc(c.acao)}</td>
+      <td style="color:var(--text-muted)">${esc(c.responsavel||"")}</td>
+      <td style="color:var(--text-muted)">${esc(c.prazo||"")}</td>
+      <td><select data-followup-idx="${i}" onchange="updateFollowupStatus(${i}, this.value)">${statusSel}</select></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function updateFollowupStatus(idx, value) {
+  const semIdx = SEMANAS.indexOf(currentSemana);
+  if (semIdx <= 0) return;
+  const semAnterior = SEMANAS[semIdx - 1];
+  const prevData = await loadFromStorage(currentLiderId, semAnterior);
+  if (!prevData || !prevData.combinados) return;
+  if (prevData.combinados[idx]) prevData.combinados[idx].followup_status = value;
+  await saveToStorage(currentLiderId, semAnterior, prevData);
+}
+
+// ── COMBINADOS ──
+function renderCombinados(lider, saved) {
+  const tbody = document.getElementById("tbody-combinados");
+  tbody.innerHTML = "";
+  const combs = saved.combinados && saved.combinados.length ? saved.combinados : [
+    {acao:"",responsavel:"",prazo:"",status:""},
+    {acao:"",responsavel:"",prazo:"",status:""},
+    {acao:"",responsavel:"",prazo:"",status:""},
+    {acao:"",responsavel:"",prazo:"",status:""},
+  ];
+
+  combs.forEach((c, i) => {
+    const tr = document.createElement("tr");
+    const statusSel = STATUS_OPTIONS.map(o =>
+      `<option value="${o.value}" ${(c.status||"")==o.value?"selected":""}>${o.label}</option>`
+    ).join("");
+    tr.innerHTML = `
+      <td class="num-col teal">${i + 1}</td>
+      <td><textarea data-comb-field="acao" data-idx="${i}" style="height:38px;resize:none" placeholder="Descreva o combinado...">${esc(c.acao||"")}</textarea></td>
+      <td><input type="text" data-comb-field="responsavel" data-idx="${i}" value="${esc(c.responsavel||"")}" placeholder="Responsável"></td>
+      <td><input type="text" data-comb-field="prazo" data-idx="${i}" value="${esc(c.prazo||"")}" placeholder="Prazo"></td>
+      <td><select data-comb-field="status" data-idx="${i}">${statusSel}</select></td>
+      <td style="text-align:center"><button onclick="removeCombinado(${i})" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px">×</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function addCombinado() {
+  const saved = await loadFromStorage(currentLiderId, currentSemana) || {};
+  const combs = saved.combinados || [];
+  combs.push({acao:"",responsavel:"",prazo:"",status:""});
+  saved.combinados = combs;
+  await saveToStorage(currentLiderId, currentSemana, saved);
+  const lider = LIDERES.find(l => l.id === currentLiderId);
+  renderCombinados(lider, saved);
+}
+
+async function removeCombinado(idx) {
+  const saved = await loadFromStorage(currentLiderId, currentSemana) || {};
+  const combs = saved.combinados || [];
+  combs.splice(idx, 1);
+  saved.combinados = combs;
+  await saveToStorage(currentLiderId, currentSemana, saved);
+  const lider = LIDERES.find(l => l.id === currentLiderId);
+  renderCombinados(lider, saved);
+}
+
+async function renderHistorico(lider) {
+  const tbody = document.getElementById("tbody-historico");
+  tbody.innerHTML = "";
+
+  const lidId = lider.id || currentLiderId;
+
+  // Busca dados de todas as semanas — prioriza cache atualizado
+  const dadosPorSemana = {};
+  for (const sem of SEMANAS) {
+    const key = getKey(lidId, sem);
+    dadosPorSemana[sem] = _cache[key] || await loadFromStorage(lidId, sem);
+  }
+
+  // Determina número máximo de indicadores entre todas as semanas salvas
+  let maxInds = lider.indicadores.length;
+  for (const sem of SEMANAS) {
+    const d = dadosPorSemana[sem];
+    if (d && d.indicadores && d.indicadores.length > maxInds) {
+      maxInds = d.indicadores.length;
+    }
+  }
+
+  // Renderiza uma linha por posição de indicador
+  for (let i = 0; i < maxInds; i++) {
+    const tr = document.createElement("tr");
+    const labelRef = lider.indicadores[i] ? lider.indicadores[i].label : `IND ${i+1}`;
+    if (labelRef === "VAR") tr.className = "var-row";
+
+    // Nome: busca da semana mais recente com dado salvo para este índice
+    let nome = (lider.indicadores[i] ? lider.indicadores[i].nome : "") || labelRef;
+    for (const sem of [...SEMANAS].reverse()) {
+      const d = dadosPorSemana[sem];
+      if (d && d.indicadores && d.indicadores[i] && d.indicadores[i].nome) {
+        nome = d.indicadores[i].nome;
+        break;
+      }
+    }
+
+    let cells = `<td style="font-weight:500">${esc(nome)}</td>`;
+    for (const sem of SEMANAS) {
+      const d = dadosPorSemana[sem];
+      const val = (d && d.indicadores && d.indicadores[i]) ? (d.indicadores[i].resultado || "") : "";
+      const status = (d && d.indicadores && d.indicadores[i]) ? (d.indicadores[i].status || "") : "";
+      const color = status === "ok" ? "var(--success-light)"
+                  : status === "warn" ? "var(--warning-light)"
+                  : status === "bad" ? "var(--danger-light)" : "";
+      cells += `<td style="${color ? 'background:'+color : ''}">${esc(val)}</td>`;
+    }
+    tr.innerHTML = cells;
+    tbody.appendChild(tr);
+  }
+}
+
+// ── PAINEL GERAL ──
+function renderPainel() {
+  const tbody = document.getElementById("tbody-painel");
+  tbody.innerHTML = "";
+  LIDERES.forEach((l, i) => {
+    const tr = document.createElement("tr");
+    let cells = `<td style="font-weight:500">${l.nome}</td><td style="color:var(--text-muted)">${l.area}</td>`;
+    SEMANAS.forEach(sem => {
+      const status = getPainelStatus(l.id, sem);
+      if (!status) {
+        cells += `<td><span class="status-dot" style="background:var(--bg);color:var(--text-muted);border:1px solid var(--border);font-size:10px">—</span></td>`;
+      } else if (status === "realizada") {
+        cells += `<td><span class="status-dot" style="background:#e8f0fe;color:#3b5bdb;font-size:10px" title="Reunião realizada — sem status de indicadores">R</span></td>`;
+      } else if (status === "ok") {
+        cells += `<td><span class="status-dot" style="background:var(--success-light);color:#065f46">✓</span></td>`;
+      } else if (status === "warn") {
+        cells += `<td><span class="status-dot" style="background:var(--warning-light);color:#92400e">⚠</span></td>`;
+      } else {
+        cells += `<td><span class="status-dot" style="background:var(--danger-light);color:#991b1b">✗</span></td>`;
+      }
+    });
+    tr.innerHTML = cells;
+    if (i % 2 === 1) tr.querySelectorAll("td").forEach(td => td.style.background = "var(--bg)");
+    tbody.appendChild(tr);
+  });
+}
+
+// ══════════════════════════════════════════════
+// SALVAR
+// ══════════════════════════════════════════════
+function coletarDados() {
+  const lider = LIDERES.find(l => l.id === currentLiderId);
+
+  // Indicadores
+  const indicadores = lider.indicadores.map((ind, i) => ({
+    label: ind.label,
+    nome: getVal(`[data-field="nome"][data-idx="${i}"]`),
+    descricao: getVal(`[data-field="descricao"][data-idx="${i}"]`),
+    fonte: getVal(`[data-field="fonte"][data-idx="${i}"]`),
+    meta: getVal(`[data-field="meta"][data-idx="${i}"]`),
+    resultado: getVal(`[data-field="resultado"][data-idx="${i}"]`),
+    status: getVal(`[data-field="status"][data-idx="${i}"]`),
+    obs: getVal(`[data-field="obs"][data-idx="${i}"]`),
+  }));
+
+  // Travamentos
+  const travamentos = lider.travamentos.map((t, i) => ({
+    descricao: getVal(`[data-trav-field="descricao"][data-idx="${i}"]`),
+    impacto: getVal(`[data-trav-field="impacto"][data-idx="${i}"]`),
+    urgencia: getVal(`[data-trav-field="urgencia"][data-idx="${i}"]`),
+    acao: getVal(`[data-trav-field="acao"][data-idx="${i}"]`),
+  }));
+
+  // Combinados
+  const tbody = document.getElementById("tbody-combinados");
+  const rows = tbody.querySelectorAll("tr");
+  const combinados = Array.from(rows).map((tr, i) => ({
+    acao: getVal(`[data-comb-field="acao"][data-idx="${i}"]`),
+    responsavel: getVal(`[data-comb-field="responsavel"][data-idx="${i}"]`),
+    prazo: getVal(`[data-comb-field="prazo"][data-idx="${i}"]`),
+    status: getVal(`[data-comb-field="status"][data-idx="${i}"]`),
+  })).filter(c => c.acao);
+
+  return {
+    data: document.getElementById("f-data").value,
+    horario: document.getElementById("f-horario").value,
+    condutor: document.getElementById("f-condutor").value,
+    objetivo: document.getElementById("f-objetivo").value || lider.objetivo,
+    observacoes: document.getElementById("f-observacoes").value,
+    indicadores,
+    travamentos,
+    combinados,
+    savedAt: new Date().toISOString(),
+  };
+}
+
+async function salvarSemana() {
+  if (!currentLiderId) return;
+  const data = coletarDados();
+  // Atualiza cache imediatamente antes de qualquer render
+  _cache[getKey(currentLiderId, currentSemana)] = data;
+  await saveToStorage(currentLiderId, currentSemana, data);
+  renderPainel();
+  await renderHistorico(LIDERES.find(l => l.id === currentLiderId));
+
+  const now = new Date();
+  document.getElementById("last-saved").textContent =
+    `Salvo às ${now.getHours().toString().padStart(2,"0")}:${now.getMinutes().toString().padStart(2,"0")}`;
+  showToast("Semana salva com sucesso!", "success");
+}
+
+function getVal(selector) {
+  const el = document.querySelector(selector);
+  return el ? el.value : "";
+}
+
+// ══════════════════════════════════════════════
+// EXPORT PDF
+// ══════════════════════════════════════════════
+async function exportarPDF() {
+  if (!currentLiderId) return;
+  showToast("Gerando PDF...");
+
+  await salvarSemana();
+
+  const lider = LIDERES.find(l => l.id === currentLiderId);
+  const saved = await loadFromStorage(currentLiderId, currentSemana) || {};
+
+  // Garante que objetivo padrão apareça se não foi preenchido manualmente
+  const data = {
+    ...saved,
+    objetivo: saved.objetivo || lider.objetivo,
+    indicadores: saved.indicadores || lider.historico_s1?.indicadores || [],
+    travamentos: saved.travamentos || lider.travamentos || [],
+    combinados: saved.combinados || [],
+    observacoes: saved.observacoes || "",
+  };
+
+  const semIdx = SEMANAS.indexOf(currentSemana);
+  const semAnterior = semIdx > 0 ? SEMANAS[semIdx - 1] : null;
+  const prevData = semAnterior ? await loadFromStorage(currentLiderId, semAnterior) : null;
+
+  const { jsPDF } = window.jspdf;
+
+  // Sanitiza texto para o jsPDF (remove/substitui caracteres não suportados)
+  function sp(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/→/g, "->")
+      .replace(/←/g, "<-")
+      .replace(/[""]/g, '"')
+      .replace(/['']/g, "'")
+      .replace(/–/g, "-")
+      .replace(/—/g, "-")
+      .replace(/…/g, "...")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // remove acentos
+      .replace(/[^\x00-\x7F]/g, "?"); // substitui demais não-ASCII
+  }
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  const PW = 210, PH = 297;
+  const ML = 15, MR = 15, MT = 15;
+  let y = MT;
+
+  const green = [86, 105, 81];
+  const teal = [18, 162, 127];
+  const lightGreen = [232, 243, 236];
+  const lightTeal = [230, 247, 242];
+  const gray = [107, 114, 128];
+  const dark = [26, 26, 26];
+  const white = [255, 255, 255];
+  const light = [247, 248, 246];
+  const border = [229, 231, 235];
+  const dangerLight = [254, 242, 242];
+  const dangerDark = [153, 27, 27];
+  const warningLight = [255, 251, 235];
+  const warningDark = [146, 64, 14];
+
+  function checkPage(need = 20) {
+    if (y + need > PH - 15) { doc.addPage(); y = MT; }
+  }
+
+  // ── HEADER ──
+  doc.setFillColor(...green);
+  doc.rect(0, 0, PW, 22, "F");
+  doc.setTextColor(...white);
+  doc.setFontSize(13); doc.setFont("helvetica","bold");
+  doc.text("WEEKLY BUSINESS REVIEW - EASY MARKET", ML, 10);
+  doc.setFontSize(9); doc.setFont("helvetica","normal");
+  doc.text(sp(`${lider.nome} | ${lider.area} | ${currentSemana}`), ML, 17);
+  const dateStr = data.data ? new Date(data.data + "T12:00:00").toLocaleDateString("pt-BR") : "-";
+  doc.text(sp(`Data: ${dateStr}   |   Condutor: ${data.condutor || "-"}   |   Horario: ${data.horario || "-"}`), PW - ML, 17, {align:"right"});
+  y = 30;
+
+  // ── OBJETIVO ──
+  if (data.objetivo) {
+    doc.setFillColor(...lightGreen);
+    doc.rect(ML, y, PW - ML - MR, 10, "F");
+    doc.setDrawColor(...border);
+    doc.setLineWidth(0.2);
+    doc.rect(ML, y, PW - ML - MR, 10);
+    doc.setFontSize(8); doc.setTextColor(...gray); doc.setFont("helvetica","bold");
+    doc.text("OBJETIVO", ML + 3, y + 4);
+    doc.setTextColor(...dark); doc.setFont("helvetica","normal");
+    const objLines = doc.splitTextToSize(sp(data.objetivo), PW - ML - MR - 30);
+    doc.text(objLines[0], ML + 24, y + 4);
+    y += 13;
+  }
+
+  // ── SECTION HEADER FN ──
+  function sectionHead(title, color) {
+    checkPage(12);
+    doc.setFillColor(...color);
+    doc.rect(ML, y, PW - ML - MR, 8, "F");
+    doc.setTextColor(...white);
+    doc.setFontSize(9); doc.setFont("helvetica","bold");
+    doc.text(sp(title), ML + 4, y + 5.5);
+    y += 10;
+  }
+
+  function tableHead(cols, bgColor) {
+    const totalW = PW - ML - MR;
+    let x = ML;
+    doc.setFillColor(...bgColor);
+    doc.rect(ML, y, totalW, 7, "F");
+    doc.setTextColor(...white);
+    doc.setFontSize(8); doc.setFont("helvetica","bold");
+    cols.forEach(col => {
+      doc.text(sp(col.label), x + 2, y + 5);
+      x += col.w;
+    });
+    y += 8;
+  }
+
+  function tableRow(cells, cols, rowIdx) {
+    const totalW = PW - ML - MR;
+    const rowH = 9;
+    checkPage(rowH + 2);
+    doc.setFillColor(...(rowIdx % 2 === 0 ? white : light));
+    doc.rect(ML, y, totalW, rowH, "F");
+    doc.setDrawColor(...border); doc.setLineWidth(0.1);
+    doc.rect(ML, y, totalW, rowH);
+    doc.setTextColor(...dark);
+    doc.setFontSize(7.5); doc.setFont("helvetica","normal");
+    let x = ML;
+    cells.forEach((cell, i) => {
+      const maxW = cols[i].w - 3;
+      const txt = sp(String(cell || ""));
+      const lines = doc.splitTextToSize(txt, maxW);
+      // Mostra até 2 linhas por célula
+      doc.text(lines.slice(0, 2), x + 2, y + 4);
+      x += cols[i].w;
+    });
+    y += rowH;
+  }
+
+  // ── INDICADORES ──
+  sectionHead("INDICADORES DA AREA", green);
+  const indCols = [
+    {label:"#", w:8}, {label:"Indicador", w:38}, {label:"Fonte", w:28},
+    {label:"Meta", w:24}, {label:"Resultado", w:26}, {label:"Status", w:28}, {label:"Obs.", w:28}
+  ];
+  tableHead(indCols, green);
+  (data.indicadores || []).forEach((ind, i) => {
+    if (!ind.nome) return;
+    const statusLabel = STATUS_OPTIONS.find(s => s.value === ind.status)?.label || "-";
+    tableRow([ind.label.replace("IND ",""), ind.nome, ind.fonte, ind.meta, ind.resultado, statusLabel, ind.obs], indCols, i);
+  });
+  y += 4;
+
+  // ── TRAVAMENTOS ──
+  sectionHead("TRAVAMENTOS, RISCOS E APOIO DO CEO", [91, 107, 120]);
+  const travCols = [
+    {label:"#", w:8}, {label:"Descrição do Travamento / Risco", w:72},
+    {label:"Impacto", w:22}, {label:"Urgência", w:22}, {label:"Ação do CEO", w:56}
+  ];
+  tableHead(travCols, [91, 107, 120]);
+  (data.travamentos || []).forEach((t, i) => {
+    if (!t.descricao) return;
+    tableRow([i+1, t.descricao, t.impacto, t.urgencia, t.acao], travCols, i);
+  });
+  y += 4;
+
+  // ── FOLLOW-UP ──
+  checkPage(20);
+  sectionHead(`FOLLOW-UP — COMBINADOS DA REUNIÃO ANTERIOR (${semAnterior || "—"})`, [74, 85, 104]);
+  const combCols = [
+    {label:"#", w:8}, {label:"Combinado / Ação", w:80},
+    {label:"Responsável", w:30}, {label:"Prazo", w:22}, {label:"Status", w:40}
+  ];
+  tableHead(combCols, [74, 85, 104]);
+  const prevCombs = prevData && prevData.combinados ? prevData.combinados.filter(c => c.acao) : [];
+  if (!prevCombs.length) {
+    doc.setFontSize(8); doc.setTextColor(...gray); doc.setFont("helvetica","italic");
+    doc.text("Nenhum combinado registrado na semana anterior", ML + 4, y + 5);
+    y += 8;
+  } else {
+    prevCombs.forEach((c, i) => {
+      const statusLabel = STATUS_OPTIONS.find(s => s.value === (c.followup_status||""))?.label || "—";
+      tableRow([i+1, c.acao, c.responsavel, c.prazo, statusLabel], combCols, i);
+    });
+  }
+  y += 4;
+
+  // ── NOVOS COMBINADOS ──
+  checkPage(20);
+  sectionHead("NOVOS COMBINADOS DESTA SEMANA", teal);
+  tableHead(combCols, teal);
+  const newCombs = (data.combinados || []).filter(c => c.acao);
+  if (!newCombs.length) {
+    doc.setFontSize(8); doc.setTextColor(...gray); doc.setFont("helvetica","italic");
+    doc.text("Nenhum combinado registrado nesta semana", ML + 4, y + 5);
+    y += 8;
+  } else {
+    newCombs.forEach((c, i) => {
+      const statusLabel = STATUS_OPTIONS.find(s => s.value === (c.status||""))?.label || "—";
+      tableRow([i+1, c.acao, c.responsavel, c.prazo, statusLabel], combCols, i);
+    });
+  }
+  y += 4;
+
+  // ── OBSERVAÇÕES ──
+  if (data.observacoes) {
+    checkPage(20);
+    sectionHead("OBSERVAÇÕES GERAIS DA REUNIÃO", [124, 143, 120]);
+    doc.setFillColor(...light);
+    const obsH = 16;
+    doc.rect(ML, y, PW - ML - MR, obsH, "F");
+    doc.setDrawColor(...border); doc.setLineWidth(0.1);
+    doc.rect(ML, y, PW - ML - MR, obsH);
+    doc.setTextColor(...dark); doc.setFontSize(8); doc.setFont("helvetica","normal");
+    const obsLines = doc.splitTextToSize(sp(data.observacoes), PW - ML - MR - 6);
+    doc.text(obsLines.slice(0,3), ML + 3, y + 5);
+    y += obsH + 4;
+  }
+
+  // ── HISTORICO ──
+  checkPage(30);
+  sectionHead("HISTORICO SEMANAL DE INDICADORES", [92, 122, 87]);
+  const histCols = [{label:"Indicador", w:50}, ...SEMANAS.map(s => ({label:s, w:17.5}))];
+  tableHead(histCols, [92, 122, 87]);
+  (data.indicadores || []).forEach((ind, i) => {
+    if (!ind.nome) return;
+    const vals = SEMANAS.map(sem => {
+      const d = _cache[getKey(currentLiderId, sem)];
+      return d && d.indicadores && d.indicadores[i] ? (d.indicadores[i].resultado || "") : "";
+    });
+    tableRow([ind.nome, ...vals], histCols, i);
+  });
+
+  // ── FOOTER ──
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFillColor(...lightGreen);
+    doc.rect(0, PH - 10, PW, 10, "F");
+    doc.setFontSize(7); doc.setTextColor(...gray); doc.setFont("helvetica","normal");
+    doc.text(sp(`Easy Market - Weekly Business Review - ${lider.nome} - ${currentSemana}`), ML, PH - 4);
+    doc.text(`Pagina ${p} de ${totalPages}`, PW - ML, PH - 4, {align:"right"});
+  }
+
+  const filename = `WBR_${lider.nome.replace(/\s+/g,"_")}_${currentSemana}_${new Date().toISOString().slice(0,10)}.pdf`;
+  doc.save(filename);
+  showToast("PDF gerado com sucesso!", "success");
+}
+
+// ══════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════
+function esc(str) {
+  return String(str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function showToast(msg, type = "") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show " + type;
+  setTimeout(() => t.className = "toast", 2800);
+}
+
+// Inicializar
+init();
+</script>
+</body>
+</html>
