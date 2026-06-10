@@ -1322,43 +1322,54 @@ async function renderHistorico(lider) {
 
   const lidId = lider.id || currentLiderId;
 
-  // Busca dados de todas as semanas — prioriza cache atualizado
+  // Busca dados de todas as semanas — semana atual sempre do cache atualizado
   const dadosPorSemana = {};
   for (const sem of SEMANAS) {
     const key = getKey(lidId, sem);
     dadosPorSemana[sem] = _cache[key] || await loadFromStorage(lidId, sem);
   }
 
-  // Determina número máximo de indicadores entre todas as semanas salvas
+  // Determina número máximo de indicadores
   let maxInds = lider.indicadores.length;
   for (const sem of SEMANAS) {
     const d = dadosPorSemana[sem];
-    if (d && d.indicadores && d.indicadores.length > maxInds) {
-      maxInds = d.indicadores.length;
-    }
+    if (d && d.indicadores && d.indicadores.length > maxInds) maxInds = d.indicadores.length;
   }
 
-  // Renderiza uma linha por posição de indicador
   for (let i = 0; i < maxInds; i++) {
     const tr = document.createElement("tr");
     const labelRef = lider.indicadores[i] ? lider.indicadores[i].label : `IND ${i+1}`;
     if (labelRef === "VAR") tr.className = "var-row";
 
-    // Nome: busca da semana mais recente com dado salvo para este índice
-    let nome = (lider.indicadores[i] ? lider.indicadores[i].nome : "") || labelRef;
-    for (const sem of [...SEMANAS].reverse()) {
-      const d = dadosPorSemana[sem];
-      if (d && d.indicadores && d.indicadores[i] && d.indicadores[i].nome) {
-        nome = d.indicadores[i].nome;
-        break;
+    // Nome: prioridade para semana atual, depois semanas mais recentes, depois estático
+    // IMPORTANTE: nome vazio ("") não é considerado válido
+    let nome = "";
+
+    // 1. Tenta semana atual primeiro
+    const dAtual = dadosPorSemana[currentSemana];
+    if (dAtual && dAtual.indicadores && dAtual.indicadores[i] && dAtual.indicadores[i].nome) {
+      nome = dAtual.indicadores[i].nome;
+    }
+
+    // 2. Se não achou, busca da semana mais recente para a mais antiga
+    if (!nome) {
+      for (const sem of [...SEMANAS].reverse()) {
+        const d = dadosPorSemana[sem];
+        if (d && d.indicadores && d.indicadores[i] && d.indicadores[i].nome) {
+          nome = d.indicadores[i].nome;
+          break;
+        }
       }
     }
+
+    // 3. Fallback para o nome estático
+    if (!nome) nome = lider.indicadores[i]?.nome || labelRef;
 
     let cells = `<td style="font-weight:500">${esc(nome)}</td>`;
     for (const sem of SEMANAS) {
       const d = dadosPorSemana[sem];
-      const val = (d && d.indicadores && d.indicadores[i]) ? (d.indicadores[i].resultado || "") : "";
-      const status = (d && d.indicadores && d.indicadores[i]) ? (d.indicadores[i].status || "") : "";
+      const val = d?.indicadores?.[i]?.resultado || "";
+      const status = d?.indicadores?.[i]?.status || "";
       const color = status === "ok" ? "var(--success-light)"
                   : status === "warn" ? "var(--warning-light)"
                   : status === "bad" ? "var(--danger-light)" : "";
