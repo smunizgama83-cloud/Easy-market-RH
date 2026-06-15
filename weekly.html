@@ -333,6 +333,16 @@ body {
 }
 .legenda-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); }
 
+/* ── MODO CONTROLE ── */
+.controle-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--accent-light); color: var(--accent);
+  font-size: 11px; font-weight: 600; padding: 5px 12px;
+  border-radius: 20px; margin-bottom: 12px;
+}
+.data-table.controle-table th { background: var(--accent); }
+.data-table.contexto-table th { background: var(--primary); }
+
 /* ── PRINT/PDF STYLES ── */
 @media print {
   .topbar, .sidebar, .actions-bar { display: none !important; }
@@ -978,8 +988,19 @@ const STATUS_OPTIONS = [
   { value:"bad", label:"✗ Não atingida" },
   { value:"na", label:"— Não realizada" },
 ];
+const STATUS_ACAO_OPTIONS = [
+  { value:"", label:"— Selecione" },
+  { value:"ok", label:"✓ Concluído" },
+  { value:"warn", label:"⚠ Em andamento" },
+  { value:"bad", label:"✗ Não iniciado" },
+  { value:"na", label:"— Não se aplica" },
+];
 const IMPACTO_OPTIONS = ["","Alto","Médio","Baixo"];
 const URGENCIA_OPTIONS = ["","Alto","Média","Baixa"];
+
+// IDs das áreas no modo pontos de controle
+const AREAS_CONTROLE = ["glaucio_eurimar","sabrina_rocha","lucas_soares","silmara_gama"];
+function isModoControle(lidId) { return AREAS_CONTROLE.includes(lidId); }
 
 // ══════════════════════════════════════════════
 // STATE
@@ -1099,6 +1120,34 @@ async function trocarLider(lidId) {
   document.getElementById("legenda-box").style.display = "";
   document.getElementById("actions-bar").style.display = "";
 
+  // Limpa card de pontos de controle anterior
+  const existingPC = document.getElementById("card-pontos-controle");
+  if (existingPC) existingPC.remove();
+
+  // Reseta cabeçalho da tabela de indicadores para o padrão
+  const tabelaInd = document.getElementById("tabela-indicadores");
+  tabelaInd.classList.remove("contexto-table");
+  tabelaInd.querySelector("thead tr").innerHTML = `
+    <th style="text-align:center">#</th>
+    <th>Indicador</th>
+    <th>Descrição do Indicador</th>
+    <th>Fonte dos Dados</th>
+    <th style="width:100px">Meta</th>
+    <th style="width:100px">Resultado</th>
+    <th style="width:140px">Status</th>
+    <th>Observações</th>
+  `;
+
+  // Atualiza título da seção conforme modo
+  const cardIndHeader = tabelaInd.closest(".card")?.querySelector(".card-title");
+  if (cardIndHeader) {
+    if (isModoControle(lidId)) {
+      cardIndHeader.innerHTML = `<div class="icon" style="background:var(--primary-light)">📋</div> Contexto / Referência da Área`;
+    } else {
+      cardIndHeader.innerHTML = `<div class="icon" style="background:var(--primary-light)">📈</div> Indicadores da Área`;
+    }
+  }
+
   showPage("reuniao");
   await renderSemana();
 }
@@ -1144,6 +1193,11 @@ async function renderSemana() {
 
 // ── INDICADORES ──
 function renderIndicadores(lider, saved) {
+  if (isModoControle(lider.id)) {
+    renderModoControle(lider, saved);
+    return;
+  }
+
   const tbody = document.getElementById("tbody-indicadores");
   tbody.innerHTML = "";
   const savedInds = saved.indicadores || [];
@@ -1170,6 +1224,129 @@ function renderIndicadores(lider, saved) {
     `;
     tbody.appendChild(tr);
   });
+}
+
+function renderModoControle(lider, saved) {
+  const tbody = document.getElementById("tbody-indicadores");
+  tbody.innerHTML = "";
+
+  // Cabeçalho da tabela de indicadores vira "Contexto / Referência da área"
+  const tabela = document.getElementById("tabela-indicadores");
+  tabela.querySelector("thead tr").innerHTML = `
+    <th style="text-align:center">#</th>
+    <th>Indicador de contexto</th>
+    <th>Descrição</th>
+    <th>Fonte</th>
+    <th style="width:120px">Valor atual</th>
+    <th>Observações</th>
+  `;
+  tabela.classList.add("contexto-table");
+
+  const savedInds = saved.indicadores || [];
+  lider.indicadores.forEach((ind, i) => {
+    const s = savedInds[i] || {};
+    const isVar = ind.label === "VAR";
+    const tr = document.createElement("tr");
+    if (isVar) tr.className = "var-row";
+    tr.innerHTML = `
+      <td class="num-col">${isVar ? "V" : ind.label.replace("IND ","")}</td>
+      <td><input type="text" value="${esc(s.nome !== undefined ? s.nome : ind.nome)}" placeholder="Nome do indicador" data-field="nome" data-idx="${i}"></td>
+      <td><input type="text" value="${esc(s.descricao !== undefined ? s.descricao : ind.descricao)}" placeholder="Descrição" data-field="descricao" data-idx="${i}"></td>
+      <td><input type="text" value="${esc(s.fonte !== undefined ? s.fonte : ind.fonte)}" placeholder="Fonte" data-field="fonte" data-idx="${i}" style="font-style:italic;color:var(--text-muted)"></td>
+      <td class="center"><input type="text" value="${esc(s.resultado||"")}" placeholder="Valor atual" data-field="resultado" data-idx="${i}" style="text-align:center;font-weight:600"></td>
+      <td><input type="text" value="${esc(s.obs||"")}" placeholder="Observações" data-field="obs" data-idx="${i}"></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Seção de pontos de controle — insere após o card de indicadores
+  renderPontosControle(lider, saved);
+}
+
+function renderPontosControle(lider, saved) {
+  // Remove seção anterior se existir
+  const existing = document.getElementById("card-pontos-controle");
+  if (existing) existing.remove();
+
+  const savedPontos = saved.pontos_controle || [
+    {acao:"",responsavel:"",status:"",obs:""},
+    {acao:"",responsavel:"",status:"",obs:""},
+    {acao:"",responsavel:"",status:"",obs:""},
+    {acao:"",responsavel:"",status:"",obs:""},
+  ];
+
+  const card = document.createElement("div");
+  card.id = "card-pontos-controle";
+  card.className = "card";
+
+  const statusOpts = STATUS_ACAO_OPTIONS.map(o => `<option value="${o.value}">${o.label}</option>`).join("");
+
+  let rows = savedPontos.map((p, i) => {
+    const sOpts = STATUS_ACAO_OPTIONS.map(o =>
+      `<option value="${o.value}" ${(p.status||"")==o.value?"selected":""}>${o.label}</option>`
+    ).join("");
+    return `<tr>
+      <td class="num-col teal">${i+1}</td>
+      <td><textarea data-pc-field="acao" data-idx="${i}" style="height:38px;resize:none" placeholder="Descreva a ação / entrega...">${esc(p.acao||"")}</textarea></td>
+      <td><input type="text" data-pc-field="responsavel" data-idx="${i}" value="${esc(p.responsavel||"")}" placeholder="Responsável"></td>
+      <td><select data-pc-field="status" data-idx="${i}">${sOpts}</select></td>
+      <td><input type="text" data-pc-field="obs" data-idx="${i}" value="${esc(p.obs||"")}" placeholder="Observações"></td>
+      <td style="text-align:center"><button onclick="removePontoControle(${i})" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px">×</button></td>
+    </tr>`;
+  }).join("");
+
+  card.innerHTML = `
+    <div class="card-header">
+      <div class="card-title">
+        <div class="icon" style="background:var(--accent-light)">✅</div>
+        Pontos de Controle da Semana
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="addPontoControle()">+ Adicionar</button>
+    </div>
+    <div class="card-body" style="padding:0">
+      <div style="overflow-x:auto">
+        <table class="data-table controle-table" id="tabela-pontos-controle">
+          <thead><tr>
+            <th style="text-align:center">#</th>
+            <th>Ação / Entrega</th>
+            <th style="width:120px">Responsável</th>
+            <th style="width:150px">Status</th>
+            <th>Observações</th>
+            <th style="width:40px"></th>
+          </tr></thead>
+          <tbody id="tbody-pontos-controle">${rows}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  // Insere após o card de indicadores
+  const cardIndicadores = document.querySelector("#tabela-indicadores")?.closest(".card");
+  if (cardIndicadores && cardIndicadores.nextSibling) {
+    cardIndicadores.parentNode.insertBefore(card, cardIndicadores.nextSibling);
+  }
+}
+
+async function addPontoControle() {
+  const saved = await loadFromStorage(currentLiderId, currentSemana) || {};
+  const pontos = saved.pontos_controle || [];
+  pontos.push({acao:"",responsavel:"",status:"",obs:""});
+  saved.pontos_controle = pontos;
+  _cache[getKey(currentLiderId, currentSemana)] = saved;
+  await saveToStorage(currentLiderId, currentSemana, saved);
+  const lider = LIDERES.find(l => l.id === currentLiderId);
+  renderPontosControle(lider, saved);
+}
+
+async function removePontoControle(idx) {
+  const saved = await loadFromStorage(currentLiderId, currentSemana) || {};
+  const pontos = saved.pontos_controle || [];
+  pontos.splice(idx, 1);
+  saved.pontos_controle = pontos;
+  _cache[getKey(currentLiderId, currentSemana)] = saved;
+  await saveToStorage(currentLiderId, currentSemana, saved);
+  const lider = LIDERES.find(l => l.id === currentLiderId);
+  renderPontosControle(lider, saved);
 }
 
 function updateStatusBadge(sel) { /* visual only — saves on salvarSemana */ }
@@ -1413,17 +1590,32 @@ function renderPainel() {
 function coletarDados() {
   const lider = LIDERES.find(l => l.id === currentLiderId);
 
-  // Indicadores
+  // Indicadores (contexto para modo controle, indicadores normais para outros)
   const indicadores = lider.indicadores.map((ind, i) => ({
     label: ind.label,
     nome: getVal(`[data-field="nome"][data-idx="${i}"]`),
     descricao: getVal(`[data-field="descricao"][data-idx="${i}"]`),
     fonte: getVal(`[data-field="fonte"][data-idx="${i}"]`),
-    meta: getVal(`[data-field="meta"][data-idx="${i}"]`),
+    meta: isModoControle(lider.id) ? "" : getVal(`[data-field="meta"][data-idx="${i}"]`),
     resultado: getVal(`[data-field="resultado"][data-idx="${i}"]`),
-    status: getVal(`[data-field="status"][data-idx="${i}"]`),
+    status: isModoControle(lider.id) ? "" : getVal(`[data-field="status"][data-idx="${i}"]`),
     obs: getVal(`[data-field="obs"][data-idx="${i}"]`),
   }));
+
+  // Pontos de controle (apenas para áreas em modo controle)
+  let pontos_controle = [];
+  if (isModoControle(lider.id)) {
+    const tbodyPC = document.getElementById("tbody-pontos-controle");
+    if (tbodyPC) {
+      const rows = tbodyPC.querySelectorAll("tr");
+      pontos_controle = Array.from(rows).map((tr, i) => ({
+        acao: getVal(`[data-pc-field="acao"][data-idx="${i}"]`),
+        responsavel: getVal(`[data-pc-field="responsavel"][data-idx="${i}"]`),
+        status: getVal(`[data-pc-field="status"][data-idx="${i}"]`),
+        obs: getVal(`[data-pc-field="obs"][data-idx="${i}"]`),
+      }));
+    }
+  }
 
   // Travamentos
   const travamentos = lider.travamentos.map((t, i) => ({
@@ -1450,6 +1642,7 @@ function coletarDados() {
     objetivo: document.getElementById("f-objetivo").value || lider.objetivo,
     observacoes: document.getElementById("f-observacoes").value,
     indicadores,
+    pontos_controle,
     travamentos,
     combinados,
     savedAt: new Date().toISOString(),
@@ -1617,19 +1810,55 @@ async function exportarPDF() {
     y += rowH;
   }
 
-  // ── INDICADORES ──
-  sectionHead("INDICADORES DA AREA", green);
-  const indCols = [
-    {label:"#", w:8}, {label:"Indicador", w:38}, {label:"Fonte", w:28},
-    {label:"Meta", w:24}, {label:"Resultado", w:26}, {label:"Status", w:28}, {label:"Obs.", w:28}
-  ];
-  tableHead(indCols, green);
-  (data.indicadores || []).forEach((ind, i) => {
-    if (!ind.nome) return;
-    const statusLabel = STATUS_OPTIONS.find(s => s.value === ind.status)?.label || "-";
-    tableRow([ind.label.replace("IND ",""), ind.nome, ind.fonte, ind.meta, ind.resultado, statusLabel, ind.obs], indCols, i);
-  });
-  y += 4;
+  // ── INDICADORES / CONTEXTO ──
+  const modoControle = isModoControle(currentLiderId);
+  if (modoControle) {
+    sectionHead("CONTEXTO / REFERENCIA DA AREA", green);
+    const ctxCols = [
+      {label:"#", w:8}, {label:"Indicador de contexto", w:52}, {label:"Fonte", w:30},
+      {label:"Valor atual", w:28}, {label:"Obs.", w:62}
+    ];
+    tableHead(ctxCols, green);
+    (data.indicadores || []).forEach((ind, i) => {
+      if (!ind.nome) return;
+      tableRow([ind.label.replace("IND ",""), ind.nome, ind.fonte, ind.resultado, ind.obs], ctxCols, i);
+    });
+    y += 4;
+
+    // Pontos de controle
+    checkPage(20);
+    sectionHead("PONTOS DE CONTROLE DA SEMANA", teal);
+    const pcCols = [
+      {label:"#", w:8}, {label:"Acao / Entrega", w:80},
+      {label:"Responsavel", w:30}, {label:"Status", w:42}, {label:"Obs.", w:20}
+    ];
+    tableHead(pcCols, teal);
+    const pontos = (data.pontos_controle || []).filter(p => p.acao);
+    if (!pontos.length) {
+      doc.setFontSize(8); doc.setTextColor(...gray); doc.setFont("helvetica","italic");
+      doc.text("Nenhum ponto de controle registrado", ML + 4, y + 5);
+      y += 8;
+    } else {
+      pontos.forEach((p, i) => {
+        const stLabel = STATUS_ACAO_OPTIONS.find(s => s.value === (p.status||""))?.label || "-";
+        tableRow([i+1, p.acao, p.responsavel, stLabel, p.obs], pcCols, i);
+      });
+    }
+    y += 4;
+  } else {
+    sectionHead("INDICADORES DA AREA", green);
+    const indCols = [
+      {label:"#", w:8}, {label:"Indicador", w:38}, {label:"Fonte", w:28},
+      {label:"Meta", w:24}, {label:"Resultado", w:26}, {label:"Status", w:28}, {label:"Obs.", w:28}
+    ];
+    tableHead(indCols, green);
+    (data.indicadores || []).forEach((ind, i) => {
+      if (!ind.nome) return;
+      const statusLabel = STATUS_OPTIONS.find(s => s.value === ind.status)?.label || "-";
+      tableRow([ind.label.replace("IND ",""), ind.nome, ind.fonte, ind.meta, ind.resultado, statusLabel, ind.obs], indCols, i);
+    });
+    y += 4;
+  }
 
   // ── TRAVAMENTOS ──
   sectionHead("TRAVAMENTOS, RISCOS E APOIO DO CEO", [91, 107, 120]);
